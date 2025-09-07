@@ -448,24 +448,25 @@ void xbrz_modification::operator()(surface& src) const
 	}
 }
 
-void offset_modification::operator()(surface& src) const
+void center_offset_modification::operator()(surface& src) const
 {
-	if(!src)
+	if(!src) {
 		return;
+	}
 
-	// Compute new dimensions, doubling (* 2) the growth to compensate for center anchoring
-	int new_w = src->w + std::abs(dx_) * 2;
-	int new_h = src->h + std::abs(dy_) * 2;
+	// Compute new dimensions, doubling (* 2) the growth to compensate for later centring of the image.
+	int new_w = src->w + std::abs(origin_.x) * 2;
+	int new_h = src->h + std::abs(origin_.y) * 2;
 
 	// Make a new transparent surface
 	surface shifted(new_w, new_h);
 
-	// The destination rectangle's position is now just the absolute offset
-	SDL_Rect dstrect;
-	dstrect.x = (dx_ >= 0) ? dx_ * 2 : 0;
-	dstrect.y = (dy_ >= 0) ? dy_ * 2 : 0;
-	dstrect.w = src->w;
-	dstrect.h = src->h;
+	rect dstrect{
+		(origin_.x >= 0) ? origin_.x * 2 : 0, // x
+		(origin_.y >= 0) ? origin_.y * 2 : 0, // y
+		src->w,                   // w
+		src->h                    // h
+	};
 
 	// Blit original into new
 	SDL_BlitSurface(src, nullptr, shifted, &dstrect);
@@ -1093,20 +1094,20 @@ REGISTER_MOD_PARSER(XBRZ, args)
 	return std::make_unique<xbrz_modification>(factor);
 }
 
-// Offset
-REGISTER_MOD_PARSER(OFFSET, args)
+// C_Offset
+REGISTER_MOD_PARSER(C_OFFSET, args)
 {
 	const auto params = utils::split_view(args, ',');
 
 	if(params.size() != 2) {
-		ERR_DP << "~OFFSET() requires exactly 2 arguments";
+		ERR_DP << "~C_OFFSET() requires exactly 2 arguments";
 		return nullptr;
 	}
 
 	const int dx = utils::from_chars<int>(params[0]).value_or(0);
 	const int dy = utils::from_chars<int>(params[1]).value_or(0);
 
-	return std::make_unique<offset_modification>(dx, dy);
+	return std::make_unique<center_offset_modification>(dx, dy);
 }
 
 // Gaussian-like blur

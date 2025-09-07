@@ -489,32 +489,27 @@ private:
 };
 
 /**
- * Offset (OFFSET) modification.
- * Moves the image by (dx, dy), by expanding some sides with transparent pixels.
+ * Offset (C_OFFSET) modification.
+ * Moves the center of the image by (dx, dy), by expanding some sides with transparent pixels.
+ * Will work poorly with images that are not anchored at their center.
  */
-class offset_modification : public modification
+class center_offset_modification : public modification
 {
 public:
-	offset_modification(int dx, int dy)
-		: dx_(dx)
-		, dy_(dy)
+	center_offset_modification(int dx, int dy)
+		: origin_{dx, dy}
 	{
 	}
 
 	virtual void operator()(surface& src) const override;
 
-	int get_dx() const
+	const point& origin() const
 	{
-		return dx_;
-	}
-	int get_dy() const
-	{
-		return dy_;
+		return origin_;
 	}
 
 private:
-	int dx_;
-	int dy_;
+	point origin_;
 };
 
 /**
