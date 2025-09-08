@@ -489,27 +489,27 @@ private:
 };
 
 /**
- * Offset (C_OFFSET) modification.
- * Moves the center of the image by (dx, dy), by expanding some sides with transparent pixels.
- * Will work poorly with images that are not anchored at their center.
+ * PAD modification.
+ * Expands the image by adding transparent pixels to its top, right, bottom, and left sides.
  */
-class center_offset_modification : public modification
+class pad_modification : public modification
 {
 public:
-	center_offset_modification(int dx, int dy)
-		: origin_{dx, dy}
+	pad_modification(int top, int right, int bottom, int left)
+		: top_{top}
+		, right_{right}
+		, bottom_{bottom}
+		, left_{left}
 	{
 	}
 
 	virtual void operator()(surface& src) const override;
 
-	const point& origin() const
-	{
-		return origin_;
-	}
-
 private:
-	point origin_;
+	int top_;
+	int right_;
+	int bottom_;
+	int left_;
 };
 
 /**

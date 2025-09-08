@@ -448,31 +448,32 @@ void xbrz_modification::operator()(surface& src) const
 	}
 }
 
-void center_offset_modification::operator()(surface& src) const
+void pad_modification::operator()(surface& src) const
 {
 	if(!src) {
 		return;
 	}
 
-	// Compute new dimensions, doubling (* 2) the growth to compensate for later centring of the image.
-	int new_w = src->w + std::abs(origin_.x) * 2;
-	int new_h = src->h + std::abs(origin_.y) * 2;
+	// Calculate the new dimensions of the padded surface
+	const int new_w = src->w + left_ + right_;
+	const int new_h = src->h + top_ + bottom_;
 
-	// Make a new transparent surface
-	surface shifted(new_w, new_h);
+	// Create a new transparent surface with the calculated dimensions
+	surface padded(new_w, new_h);
 
+	// Define the destination rectangle for the original image
 	rect dstrect{
-		(origin_.x >= 0) ? origin_.x * 2 : 0, // x
-		(origin_.y >= 0) ? origin_.y * 2 : 0, // y
-		src->w,                   // w
-		src->h                    // h
+		left_,
+		top_,
+		src->w,
+		src->h
 	};
 
-	// Blit original into new
-	SDL_BlitSurface(src, nullptr, shifted, &dstrect);
+	// Blit the original surface onto the new, padded surface
+	SDL_BlitSurface(src, nullptr, padded, &dstrect);
 
-	// Replace source
-	src = shifted;
+	// Replace the original surface with the new, padded one
+	src = padded;
 }
 
 /*
@@ -1094,20 +1095,49 @@ REGISTER_MOD_PARSER(XBRZ, args)
 	return std::make_unique<xbrz_modification>(factor);
 }
 
-// C_Offset
-REGISTER_MOD_PARSER(C_OFFSET, args)
+// PAD
+REGISTER_MOD_PARSER(PAD, args)
 {
-	const auto params = utils::split_view(args, ',');
+	// Explicitly construct a std::string from the std::string_view 'args'
+	const std::string args_str(args);
 
-	if(params.size() != 2) {
-		ERR_DP << "~C_OFFSET() requires exactly 2 arguments";
+	// Now pass the std::string object to the function
+	const auto params = utils::map_split(args_str, ',', '=');
+
+	// Check if map_split failed to parse any key-value pairs
+	// This is a simple check to see if the map is empty but the args string is not.
+	if(params.empty() && !args.empty()) {
+		ERR_DP << "~PAD() requires 1 or more arguments in a 'key=value' format. Valid keys: top,right,bottom,left";
 		return nullptr;
 	}
 
-	const int dx = utils::from_chars<int>(params[0]).value_or(0);
-	const int dy = utils::from_chars<int>(params[1]).value_or(0);
+	int top = 0;
+	int right = 0;
+	int bottom = 0;
+	int left = 0;
 
-	return std::make_unique<center_offset_modification>(dx, dy);
+	// Check for each keyword and convert its value to an integer
+	auto it = params.find("top");
+	if(it != params.end()) {
+		top = utils::from_chars<int>(it->second).value_or(0);
+	}
+
+	it = params.find("right");
+	if(it != params.end()) {
+		right = utils::from_chars<int>(it->second).value_or(0);
+	}
+
+	it = params.find("bottom");
+	if(it != params.end()) {
+		bottom = utils::from_chars<int>(it->second).value_or(0);
+	}
+
+	it = params.find("left");
+	if(it != params.end()) {
+		left = utils::from_chars<int>(it->second).value_or(0);
+	}
+
+	return std::make_unique<pad_modification>(top, right, bottom, left);
 }
 
 // Gaussian-like blur
