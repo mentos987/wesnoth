@@ -1098,43 +1098,70 @@ REGISTER_MOD_PARSER(XBRZ, args)
 // PAD
 REGISTER_MOD_PARSER(PAD, args)
 {
-	// Explicitly construct a std::string from the std::string_view 'args'
-	const std::string args_str(args);
-
-	// Now pass the std::string object to the function
-	const auto params = utils::map_split(args_str, ',', '=');
-
-	// Check if map_split failed to parse any key-value pairs
-	// This is a simple check to see if the map is empty but the args string is not.
-	if(params.empty() && !args.empty()) {
-		ERR_DP << "~PAD() requires 1 or more arguments in a 'key=value' format. Valid keys: top,right,bottom,left";
-		return nullptr;
-	}
-
 	int top = 0;
 	int right = 0;
 	int bottom = 0;
 	int left = 0;
 
-	// Check for each keyword and convert its value to an integer
-	auto it = params.find("top");
-	if(it != params.end()) {
-		top = utils::from_chars<int>(it->second).value_or(0);
-	}
+	// Check for the presence of an '=' sign to determine the parsing mode.
+	if(args.find('=') != std::string_view::npos) {
 
-	it = params.find("right");
-	if(it != params.end()) {
-		right = utils::from_chars<int>(it->second).value_or(0);
-	}
+		// --- Keyword-Argument Mode ---
+		const std::string args_str(args);
+		const auto params = utils::map_split(args_str, ',', '=');
 
-	it = params.find("bottom");
-	if(it != params.end()) {
-		bottom = utils::from_chars<int>(it->second).value_or(0);
-	}
+		// Check for illegally mixed formats like "~PAD(3,left=2)"
+		const auto positional_params = utils::split_view(args, ',');
+		for(const auto& p : positional_params) {
+			if(p.find('=') == std::string_view::npos) {
+				ERR_DP << "~PAD() does not allow mixing positional and keyword arguments. Use format: PAD(key=value...) or PAD(all).";
+				return nullptr;
+			}
+		}
 
-	it = params.find("left");
-	if(it != params.end()) {
-		left = utils::from_chars<int>(it->second).value_or(0);
+		// Map valid input strings to the corresponding integer reference
+		const std::map<std::string, int*> alias_map = {
+			{"top", &top},
+			{"t", &top},
+			{"right", &right},
+			{"r", &right},
+			{"bottom", &bottom},
+			{"b", &bottom},
+			{"left", &left},
+			{"l", &left},
+		};
+
+		// Parse and assign values if keywords are valid
+		for(const auto& [key, value] : params) {
+			auto it = alias_map.find(key);
+			if(it != alias_map.end()) {
+				*it->second = utils::from_chars<int>(value).value_or(0);
+			} else {
+				ERR_DP << "~PAD() found an unknown keyword: '" << key << "'. Valid keywords: top, t, right, r, bottom, b, left, l.";
+				return nullptr;
+			}
+		}
+
+	} else {
+
+		// --- Numeric-Argument Mode ---
+		const auto params = utils::split_view(args, ',');
+
+		if(params.size() == 1) {
+			auto result = utils::from_chars<int>(params[0]);
+
+			// Check if the conversion was successful
+			if(result) {
+				const int pad = result.value();
+				top = right = bottom = left = pad;
+			} else {
+				ERR_DP << "~PAD() requires a single, valid integer for a numeric argument. Received: '" << params[0] << "'.";
+				return nullptr;
+			}
+		} else {
+			ERR_DP << "~PAD() takes exactly 1 numeric argument. For custom padding, use 'key=value' format. PAD(key=value...) or PAD(all).";
+			return nullptr;
+		}
 	}
 
 	return std::make_unique<pad_modification>(top, right, bottom, left);
