@@ -302,7 +302,7 @@ frame_parameters frame_parsed_parameters::parameters(const std::chrono::millisec
 		.blend_ratio = blend_ratio_.get_current_element(current_time),
 		.highlight_ratio = highlight_ratio_.get_current_element(current_time,1.0),
 		.offset = offset_.get_current_element(current_time,-1000),
-		.parallax_mult = parallax_mult_.get_current_element(current_time, 1.0);
+		.parallax_mult = parallax_mult_.get_current_element(current_time, 1.0),
 		.submerge = submerge_.get_current_element(current_time),
 		.x = x_.get_current_element(current_time),
 		.y = y_.get_current_element(current_time),
