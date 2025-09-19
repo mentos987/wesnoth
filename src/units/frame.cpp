@@ -733,8 +733,8 @@ void unit_frame::redraw(const std::chrono::milliseconds& frame_time, bool on_sta
 			const int dy = y - cy;
 
 			// Apply the parallax offset to the final coordinates
-			my_x += static_cast<int>(dx * (parallax_ - 1.0f));
-			my_y += static_cast<int>(dy * (parallax_ - 1.0f));
+			my_x += static_cast<int>(dx * (parallax_ - 1.0f) * disp_zoom);
+			my_y += static_cast<int>(dy * (parallax_ - 1.0f) * disp_zoom);
 		}
 
 		// TODO: don't conflate highlights and alpha
@@ -933,8 +933,8 @@ std::set<map_location> unit_frame::get_overlaped_hex(const std::chrono::millisec
 				const int dy = y - cy;
 
 				// Apply the parallax offset to the final coordinates
-				my_x += static_cast<int>(dx * (parallax_ - 1.0f));
-				my_y += static_cast<int>(dy * (parallax_ - 1.0f));
+				my_x += static_cast<int>(dx * (parallax_ - 1.0f) * disp_zoom);
+				my_y += static_cast<int>(dy * (parallax_ - 1.0f) * disp_zoom);
 			}
 
 			// Check if our underlying hexes are invalidated. If we need to update ourselves because we changed,
